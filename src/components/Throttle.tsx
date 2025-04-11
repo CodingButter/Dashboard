@@ -1,5 +1,5 @@
 import THREE from "three"
-import { useClient } from "../context/ClientContext"
+import { useClient } from "../hooks/useWSClient"
 import { Canvas } from "@react-three/fiber"
 import { degreesToRadians } from "../utils/math"
 import { OrbitControls, useGLTF } from "@react-three/drei"

@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react"
-import { ClientContext } from "../context/ClientContext"
-import Client, { type WebSocketString } from "../libs/api"
-const server: WebSocketString = "ws://192.168.1.151:8888/ws"
+import  { PropsWithChildren, useEffect, useState } from "react"
+import { WSClientContext } from "@/hooks/useWSClient"
+import Client from "@/libs/api"
+export interface IUDPClientContextProps extends PropsWithChildren {
+  serverPath: WebSocketURL 
+}
 
-export default function ClientProvider({ children }: { children: React.ReactNode }) {
+export default function WSClientProvider({ serverPath,children}: IUDPClientContextProps) {
   const [client, setClient] = useState<Client | null>(null)
   const [brake, setBrake] = useState<number>(0)
   const [throttle, setThrottle] = useState<number>(0)
@@ -11,7 +13,7 @@ export default function ClientProvider({ children }: { children: React.ReactNode
   const [steering, setSteering] = useState<number>(0)
 
   useEffect(() => {
-    const client = new Client(server)
+    const client = new Client(serverPath)
     client.addListener<"BRAKE">("BRAKE", (data: { CurrentAngle: number }) => {
       setBrake(data.CurrentAngle)
     })
@@ -32,8 +34,8 @@ export default function ClientProvider({ children }: { children: React.ReactNode
   }, [])
 
   return (
-    <ClientContext.Provider value={{ client, brake, clutch, throttle, steering }}>
+    <WSClientContext.Provider value={{ client, brake, clutch, throttle, steering }}>
       {children}
-    </ClientContext.Provider>
+    </WSClientContext.Provider>
   )
 }

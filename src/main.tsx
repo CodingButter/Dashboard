@@ -2,12 +2,14 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import "./index.css"
 import App from "./App.tsx"
-import ClientProvider from "./components/ClientProvider"
+import WSClientProvider from "@providers/WSClientProvider"
+
+const udpServer = import.meta.env.VITE_WS_SERVER
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ClientProvider>
+    <WSClientProvider serverPath={udpServer}>
       <App />
-    </ClientProvider>
+    </WSClientProvider>
   </StrictMode>
 )

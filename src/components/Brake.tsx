@@ -1,4 +1,4 @@
-import { useClient } from "../context/ClientContext"
+import { useClient } from "../hooks/useWSClient"
 
 export default function Brake() {
   const { brake } = useClient()!

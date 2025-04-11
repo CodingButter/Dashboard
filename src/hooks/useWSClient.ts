@@ -1,13 +1,13 @@
 import { createContext, useContext } from "react"
 import Client from "../libs/api"
-export interface IClientContext {
+export interface IWSClientContext {
   client: Client | null
   brake: number
   throttle: number
   clutch?: number
   steering: number
 }
-export const ClientContext = createContext<IClientContext>({
+export const WSClientContext = createContext<IWSClientContext>({
   client: null,
   brake: 0,
   throttle: 0,
@@ -15,6 +15,6 @@ export const ClientContext = createContext<IClientContext>({
   steering: 0,
 })
 
-export function useClient() {
-  return useContext(ClientContext)
+export function useWSClient() {
+  return useContext(  WSClientContext)
 }

@@ -10,16 +10,14 @@ export interface IAXIS_DATA {
   CLUTCH: { CurrentAngle: number }
   STEERING: { Rotation: number }
 }
-export type WebSocketString =
-  | `ws://${string}:${number}${string | null}`
-  | `wss://${string}${string | null}`
+
 export type LISTENER = (data: any) => void
 
 export default class Client {
   private listeners: { [key: string]: LISTENER[] } = {}
   private data: { [key: string]: any } = {}
-  private server: WebSocketString
-  constructor(connection: WebSocketString) {
+  private server: WebSocketURL 
+  constructor(connection: WebSocketURL ) {
     this.server = connection
     this.createSocket()
   }
