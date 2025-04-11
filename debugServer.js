@@ -12,6 +12,11 @@ const logs = [];
 app.use(cors());
 app.use(bodyParser.json());
 
+// Health check endpoint to check if server is running
+app.head('/log', (req, res) => {
+  res.status(200).end();
+});
+
 // Get all logs
 app.get('/logs', (req, res) => {
   res.json(logs);
@@ -43,7 +48,25 @@ app.post('/log', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Debug server running on http://localhost:${PORT}`);
   console.log(`View logs at http://localhost:${PORT}/logs`);
+});
+
+// Handle server shutdown properly
+process.on('SIGINT', () => {
+  console.log('Shutting down debug server...');
+  server.close(() => {
+    console.log('Debug server closed');
+    process.exit(0);
+  });
+});
+
+// If parent process exits (e.g., when vite dev server is stopped)
+process.on('SIGTERM', () => {
+  console.log('Shutting down debug server...');
+  server.close(() => {
+    console.log('Debug server closed');
+    process.exit(0);
+  });
 });

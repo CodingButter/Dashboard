@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls, GizmoHelper, GizmoViewcube, SoftShadows } from '@react-three/drei'
 import * as THREE from 'three'
 import { useControls, folder } from 'leva'
+import { DirectionalLight, SpotLight } from 'three'
 
 interface IRacingSceneProps {
   children: ReactNode;
@@ -21,18 +22,19 @@ export default function RacingScene({
   showControls = true,
   showGizmo = false,
   controlsGroup = 'scene',
-  defaultShadowDistance = 2,
-  defaultShadowOpacity = 0.5,
-  defaultShadowSize = 10,
-  defaultLightPosition = [0, 10, 10],
+  defaultShadowDistance = 3,
+  defaultShadowOpacity = 0.8,
+  defaultShadowSize = 12,
+  defaultLightPosition = [0, 2, 8],
   defaultBackgroundColor = 'transparent'
 }: IRacingSceneProps) {
   const shadowPlaneRef = useRef<THREE.Mesh>(null!)
-  const lightRef = useRef<THREE.SpotLight>(null!)
+  const lightRef = useRef<DirectionalLight>(null!)
   
   // Create properly structured controls
   const { 
-    shadowDistance, 
+    // shadowDistance is used in the original code but we're using fixed positioning now
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     shadowOpacity, 
     shadowSize, 
     shadowBlur, 
@@ -54,7 +56,7 @@ export default function RacingScene({
       lightY: { value: defaultLightPosition[1], min: 0, max: 20, step: 0.5 },
       lightZ: { value: defaultLightPosition[2], min: -20, max: 20, step: 0.5 }
     }),
-    showLightHelper: { value: false }
+    showLightHelper: { value: true }
   })
   
   // Handle light helper via useEffect to avoid conditional rendering issues
@@ -67,6 +69,28 @@ export default function RacingScene({
       const currentLight = lightRef.current
       const helper = new THREE.SpotLightHelper(currentLight, 'red')
       parent.add(helper)
+
+      // Debug shadow settings
+      console.log('RacingScene Shadow Debug:');
+      console.log('- Light position:', [lightX, lightY, lightZ]);
+      console.log('- Shadow settings:', {
+        castShadow: currentLight.castShadow,
+        mapSize: currentLight.shadow?.mapSize,
+        bias: currentLight.shadow?.bias,
+        camera: {
+          near: currentLight.shadow?.camera.near,
+          far: currentLight.shadow?.camera.far,
+          top: currentLight.shadow?.camera.top,
+          right: currentLight.shadow?.camera.right,
+          bottom: currentLight.shadow?.camera.bottom,
+          left: currentLight.shadow?.camera.left
+        }
+      });
+      console.log('- Shadow plane:', {
+        position: shadowPlaneRef.current?.position,
+        rotation: shadowPlaneRef.current?.rotation,
+        receiveShadow: shadowPlaneRef.current?.receiveShadow
+      });
       
       return () => {
         helper.dispose()
@@ -76,7 +100,7 @@ export default function RacingScene({
       }
     }
     return undefined
-  }, [showLightHelper])
+  }, [showLightHelper, lightX, lightY, lightZ])
   
   return (
     <div className="flex justify-center items-center w-full h-full">
@@ -105,46 +129,9 @@ export default function RacingScene({
           {/* The children components will be nested here */}
           {children}
           
-          {/* Enhanced shadow-catching plane - only shows shadows */}
-          <mesh 
-            ref={shadowPlaneRef}
-            position={[0, 0, -shadowDistance]} 
-            rotation={[0, 0, 0]} 
-            receiveShadow
-          >
-            <planeGeometry args={[shadowSize, shadowSize]} />
-            <meshBasicMaterial 
-              color={shadowColor}
-              transparent 
-              opacity={0} // Make the plane itself invisible
-              alphaTest={0.01}
-            />
-            <shadowMaterial 
-              transparent 
-              opacity={shadowOpacity} 
-              color={shadowColor}
-              blending={THREE.MultiplyBlending} // Better shadow blending
-            />
-          </mesh>
+          {/* We're using a custom ground plane in the component itself now */}
           
-          {/* Base lighting */}
-          <ambientLight intensity={0.5} />
-          
-          {/* Enhanced spotlight with better shadow settings */}
-          <spotLight
-            ref={lightRef}
-            castShadow
-            position={[lightX, lightY, lightZ]}
-            intensity={1.5}
-            angle={0.6}
-            penumbra={0.5}
-            color="#ffffff"
-            shadow-mapSize={[4096, 4096]} // Higher resolution shadow maps
-            shadow-bias={-0.0005}         // Adjusted bias to reduce artifacts
-            shadow-radius={shadowBlur * 15} // Apply blur to shadows
-            shadow-camera-near={0.1}      // Adjusted for better shadow precision
-            shadow-camera-far={100}
-          />
+          {/* Scene lights and shadow planes are now defined in the components */}
         </group>
         
         {showGizmo && (

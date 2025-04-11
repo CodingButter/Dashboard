@@ -26,13 +26,20 @@ export default function ModelLoader({
   // Apply shadow properties to all meshes
   useEffect(() => {
     if (scene) {
+      console.log(`ModelLoader: Setting up shadows for model ${modelPath}`);
+      let meshCount = 0;
+      
       scene.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
           const mesh = child as THREE.Mesh;
+          meshCount++;
           
           // Ensure shadow casting is properly set
           mesh.castShadow = castShadow;
           mesh.receiveShadow = receiveShadow;
+          
+          // Log mesh info
+          console.log(`Mesh ${mesh.name || 'unnamed'}: castShadow=${mesh.castShadow}, receiveShadow=${mesh.receiveShadow}`);
           
           // Set high-quality shadow settings
           if (castShadow) {
@@ -55,12 +62,14 @@ export default function ModelLoader({
         }
       });
       
+      console.log(`ModelLoader: Processed ${meshCount} meshes in model ${modelPath}`);
+      
       // Call onLoad callback with the loaded model
       if (onLoad) {
         onLoad(scene);
       }
     }
-  }, [scene, castShadow, receiveShadow, onLoad, material]);
+  }, [scene, castShadow, receiveShadow, onLoad, material, modelPath]);
 
   // Helper function to configure materials for better shadows
   const configureMaterial = (material: THREE.Material) => {

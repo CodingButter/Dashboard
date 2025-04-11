@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node debugServer.js & vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -19,6 +19,7 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "leva": "^0.10.0",
+    "node-fetch": "^3.3.2",
     "pnpm": "^10.8.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
