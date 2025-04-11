@@ -31,7 +31,7 @@ export default function WSClientProvider({ serverPath,children}: IUDPClientConte
     return () => {
       setClient(null)
     }
-  }, [])
+  }, [serverPath])
 
   return (
     <WSClientContext.Provider value={{ client, brake, clutch, throttle, steering }}>

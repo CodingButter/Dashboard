@@ -1,8 +1,27 @@
 @import "tailwindcss";
 
 body,
-html,#root {
-    width: 100vw;
-    height: 100vh;
-    margin: 0;
+html, #root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: transparent; /* Important for OBS overlay */
+}
+
+/* Make sure canvas backgrounds are transparent */
+canvas {
+  background-color: transparent !important;
+}
+
+/* Shadow-only styles */
+.shadow-only {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Disable leva panel in production if needed */
+body.production .leva-container {
+  display: none;
 }

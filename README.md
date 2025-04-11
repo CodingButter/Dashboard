@@ -1,54 +1,64 @@
-# React + TypeScript + Vite
+# Racing Sim Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A customizable 3D dashboard for racing simulations, designed to work as an OBS overlay.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 3D visualization of steering wheel, throttle, and brake
+- Real-time data from WebSocket server
+- Customizable shadows and lighting
+- Transparent background for OBS integration
+- Interactive controls for development
 
-## Expanding the ESLint configuration
+## Development Setup
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Installation
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Environment Variables
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Create a `.env` file at the root of the project with:
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
 ```
+VITE_WS_SERVER=ws://your-websocket-server:port
+VITE_CONTROL=true  # Enable development controls
+```
+
+### Running the Development Server
+
+```bash
+npm run dev
+```
+
+### Browser Console Debugging
+
+For debugging browser console output, run the debug server in a separate terminal:
+
+```bash
+# Terminal 1: Start the debug server
+npm run debug-server
+
+# Terminal 2: Start the app
+npm run dev
+
+# Terminal 3: Monitor logs
+npm run check-logs
+```
+
+This setup allows you to:
+1. Capture all browser console logs and errors
+2. Monitor them in a separate terminal
+3. Debug application issues without needing browser dev tools
+
+## Building for Production
+
+```bash
+npm run build
+```
+
+## License
+
+MIT

@@ -1,93 +1,84 @@
+import { useRef } from "react"
 import { useWSClient } from "@hooks/useWSClient"
-import { Canvas } from "@react-three/fiber"
-import { degreesToRadians } from "../utils/math"
-import { OrbitControls, GizmoHelper, GizmoViewcube, PerspectiveCamera } from "@react-three/drei"
-import OBJModel from "./Model"
-import { useControls } from "leva" 
-import SpotLights from "./SpotLights"
-import { useEffect,useRef,useState } from "react"
+import { useControls } from "leva"
+import { PerspectiveCamera } from "@react-three/drei"
+import { RacingScene, RacingComponent, ModelLoader } from "./common"
 import * as THREE from "three"
-const control = import.meta.env.VITE_CONTROL
 
+// Toggle for development mode controls
+const useDevControls = import.meta.env.VITE_CONTROL === "true"
 
-interface IWheelProps {
-  rotation: number
-  scale?: [number, number, number] | number
-}
-
-export function Wheel({ rotation,scale, ...props }: IWheelProps) {
-  return (
-    <group
-      castShadow
-      receiveShadow
-      {...props}
-      dispose={null}
-      rotation={[0, degreesToRadians(180), degreesToRadians(rotation)]}>
-      <OBJModel scale={(typeof scale === "number" ? [scale, scale, scale] : scale)} modelPath="/models/NRGWheel.gltf"/>
-    </group>
-  )
-}
-
-function WheelScene(){
-  const [cameraReady, setCameraReady] = useState<boolean>(false)
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
+export default function SteeringWheel() {
   const wheelRef = useRef<THREE.Group>(null!)
-  useEffect(()=>{
-    if (cameraRef.current) {
-      setCameraReady(true)
-    }
-  },[cameraRef])
+  const { steering } = useWSClient()
   
-  const { steeringControl } = useControls({
+  // Development controls for testing without websocket data
+  const steeringControl = useControls("wheel", {
     steeringControl: {
       value: 0,
       min: -100,
       max: 100,
       step: 1,
-
-    },
-  })
-
-  const { lightControl } = useControls({
-    lightControl: {
-      value: {
-        x: 0,
-        y: 10,
-        z: 10,
-      },
-      min: -100,
-      max: 100,
-      step:.1
+      disabled: !useDevControls
     }
+  }).steeringControl
+  
+  // Enhanced visual controls
+  const { 
+    elevation, 
+    distance, 
+    brightness, 
+    ambience 
+  } = useControls("wheelVisuals", {
+    elevation: { value: 0, min: -5, max: 5, step: 0.1 },      // Slight elevation to improve shadow appearance
+    distance: { value: 1.5, min: 0, max: 10, step: 0.1 },     // Distance to shadow
+    brightness: { value: 1.5, min: 0, max: 5, step: 0.1 },    // Lighting brightness
+    ambience: { value: 0.3, min: 0, max: 1, step: 0.05 }      // Ambient light intensity
   })
-
-  const { x: light_x, y: light_y, z: light_z } = lightControl
-  const { steering } = useWSClient()
-
-  return (<group position={[0, 0, 0]} rotation={[0, 0, 0]} scale={1} castShadow receiveShadow>
-    <>
-     {cameraReady && <OrbitControls />}
-    </>
-        <Wheel ref={wheelRef} rotation={control?steeringControl:steering} scale={0.01}  />
-        <mesh position={[0, 0, -2]} rotation={[0, 0, 0]} scale={1} castShadow receiveShadow>
-          <meshStandardMaterial color="black" transparent opacity={0.2} />
-          <boxGeometry args={[10, 10, 0]} />
-        </mesh>
-        <PerspectiveCamera ref={cameraRef} makeDefault position={[0, 0, 10]} fov={45} castShadow/> 
-        <ambientLight intensity={0.5}/>
-        <SpotLights target={wheelRef?.current} position={control?[light_x, light_y, light_z]:[0, 10, 10]} intensity={1.5} rotation={[0, degreesToRadians(180), 0]} color="#aaaaaa" castShadow />
-  </group>)
-}
-export default function SteeringWheel() {
- 
+  
+  // Use either the dev control value or the real websocket value
+  const rotationValue = useDevControls ? steeringControl : steering
+  
   return (
-    <div className="flex justify-center items-center w-full h-full">
-      <Canvas className="w-full h-full" shadows>
-      <WheelScene />
-      <GizmoHelper alignment="bottom-right" margin={[80,80]} >
-        <GizmoViewcube />
-      </GizmoHelper>
-      </Canvas>
-    </div>
+    <RacingScene 
+      showControls={true}
+      showGizmo={true}
+      controlsGroup="steeringWheel"
+      defaultShadowDistance={distance}
+      defaultShadowOpacity={0.7}
+      defaultShadowSize={12}
+      defaultLightPosition={[0, 10, 5]}
+      defaultBackgroundColor="transparent"
+    >
+      {/* Camera setup */}
+      <PerspectiveCamera makeDefault position={[0, 0, 10]} fov={45} />
+      
+      {/* Steering wheel component */}
+      <RacingComponent
+        ref={wheelRef}
+        rotation={rotationValue}
+        rotationAxis={[0, 0, 1]}
+        position={[0, elevation, 0]}
+      >
+        <RacingComponent rotation={180} rotationAxis={[0, 1, 0]}>
+          <ModelLoader 
+            modelPath="/models/NRGWheel.gltf"
+            scale={0.01}
+            castShadow={true}
+            receiveShadow={false}
+          />
+        </RacingComponent>
+      </RacingComponent>
+      
+      {/* Enhanced lighting */}
+      <ambientLight intensity={ambience} />
+      <spotLight 
+        position={[5, 5, 5]} 
+        intensity={brightness * 0.5} 
+        angle={0.3} 
+        penumbra={0.8} 
+        castShadow={false} 
+      />
+    </RacingScene>
   )
 }

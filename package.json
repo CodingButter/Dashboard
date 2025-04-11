@@ -7,12 +7,17 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "debug-server": "node debugServer.js",
+    "check-logs": "node checkLogs.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.0.6",
     "@react-three/fiber": "^9.1.2",
     "@tailwindcss/vite": "^4.1.3",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "leva": "^0.10.0",
     "pnpm": "^10.8.0",
     "react": "^19.1.0",
