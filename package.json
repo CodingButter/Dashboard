@@ -6,7 +6,13 @@
   "scripts": {
     "dev": "vite",
     "dev:clean": "bash -c \"pkill -f 'vite' || true && vite\"",
+    "dev:unified": "PANEL_MODE=unified vite",
+    "dev:combined": "PANEL_MODE=combined vite",
+    "dev:leva": "PANEL_MODE=leva vite",
     "build": "tsc -b && vite build",
+    "build:unified": "PANEL_MODE=unified tsc -b && vite build",
+    "build:combined": "PANEL_MODE=combined tsc -b && vite build",
+    "build:leva": "PANEL_MODE=leva tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "logs:start": "node simple-debug.js",

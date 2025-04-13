@@ -7,14 +7,7 @@ import { useGlobalState } from "../hooks/useGlobalState"
 import { exportLocalStorageAsJson } from "../utils/storageUtils"
 import { resetPanelPositions } from "../utils/controlStateManager"
 import * as THREE from "three"
-import { 
-  ModelLoader, 
-  DraggablePanel, 
-  SliderControl, 
-  ColorControl, 
-  ToggleControl, 
-  VectorControl 
-} from "./common"
+import { ModelLoader } from "./common"
 
 // Custom component to track camera position changes during orbit
 interface CameraControlsProps {
@@ -221,8 +214,8 @@ function CameraControls({
 }
 
 // Component wrapped in memo to reduce unnecessary re-renders
-export default React.memo(function SteeringWheel() {
-  // Access the global state using our new hook
+export default React.memo(function LevaSteeringWheel() {
+  // Access the global state using our hook
   const { state: globalState, loadStateFromFile, resetState } = useGlobalState();
   const [notification, setNotification] = useState<{
     message: string;
@@ -317,9 +310,36 @@ export default React.memo(function SteeringWheel() {
       globalState.wheelSettings.groundVisible : true
   );
   
-  const [panelPosition, setPanelPosition] = useStorage<{x: number, y: number}>(
-    "panelPosition", 
-    globalState.wheelSettings?.panelPosition || { x: 20, y: 20 }
+  // Camera settings storage
+  const [cameraPosition, setCameraPosition] = useStorage<[number, number, number]>(
+    "cameraPosition",
+    globalState.cameraSettings?.position || [0, 0, 5]
+  );
+  
+  const [cameraFov, setCameraFov] = useStorage<number>(
+    "cameraFov",
+    globalState.cameraSettings?.fov || 50
+  );
+  
+  const [cameraZoom, setCameraZoom] = useStorage<number>(
+    "cameraZoom",
+    globalState.cameraSettings?.zoom || 1
+  );
+  
+  // Orbit controls settings
+  const [orbitMinDistance, setOrbitMinDistance] = useStorage<number>(
+    "orbitMinDistance",
+    globalState.cameraSettings?.minDistance || 1
+  );
+  
+  const [orbitMaxDistance, setOrbitMaxDistance] = useStorage<number>(
+    "orbitMaxDistance",
+    globalState.cameraSettings?.maxDistance || 10
+  );
+  
+  const [enableDamping, setEnableDamping] = useStorage<boolean>(
+    "enableDamping",
+    globalState.cameraSettings?.enableDamping !== undefined ? globalState.cameraSettings.enableDamping : true
   );
   
   // Show a notification with auto-dismiss
@@ -392,6 +412,12 @@ export default React.memo(function SteeringWheel() {
     }
   }, [resetState, showNotification]);
   
+  // Handle fixing all panel positions
+  const handleFixPanelPositions = useCallback(() => {
+    resetPanelPositions();
+    showNotification('Panel positions have been reset', 'info');
+  }, [showNotification]);
+  
   // Check for WebGL support
   useEffect(() => {
     try {
@@ -405,9 +431,37 @@ export default React.memo(function SteeringWheel() {
     }
   }, []);
   
-  // Set up Leva controls with our storage hooks
+  // Main light position values for XYZ
+  const [mainLightX, mainLightY, mainLightZ] = mainLightPosition;
+  const [fillLightX, fillLightY, fillLightZ] = fillLightPosition;
+  const [cameraX, cameraY, cameraZ] = cameraPosition;
+  
+  // Function to handle refreshing shadows
+  const handleRefreshShadows = useCallback(() => {
+    // Force refresh of renderer to apply shadow settings
+    setShadowMapSize(prev => prev);
+    showNotification('Shadow settings refreshed', 'info');
+  }, [setShadowMapSize, showNotification]);
+  
+  // Function to reset camera position
+  const handleResetCameraPosition = useCallback(() => {
+    setCameraPosition([0, 0, 5]);
+    setCameraFov(50);
+    setCameraZoom(1);
+    showNotification('Camera position reset', 'info');
+  }, [setCameraPosition, setCameraFov, setCameraZoom, showNotification]);
+  
+  // Function to reset camera controls
+  const handleResetCameraControls = useCallback(() => {
+    setOrbitMinDistance(1);
+    setOrbitMaxDistance(10);
+    setEnableDamping(true);
+    showNotification('Camera controls reset', 'info');
+  }, [setOrbitMinDistance, setOrbitMaxDistance, setEnableDamping, showNotification]);
+  
+  // Set up all Leva controls in a single useControls call
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const wheelControls = useControls({
+  const allControls = useControls('Steering Wheel Controls', {
     'Wheel Model': folder({
       rotationX: {
         value: rotationX,
@@ -437,7 +491,8 @@ export default React.memo(function SteeringWheel() {
         step: 0.001,
         onChange: (value) => setScale(value)
       }
-    }),
+    }, { collapsed: false }),
+    
     'Lighting': folder({
       ambientIntensity: {
         value: ambientIntensity,
@@ -449,468 +504,203 @@ export default React.memo(function SteeringWheel() {
       directionalIntensity: {
         value: directionalIntensity,
         min: 0,
-        max: 1,
+        max: 2,
         step: 0.05,
         onChange: (value) => setDirectionalIntensity(value)
       },
+      fillLightIntensity: {
+        value: fillLightIntensity,
+        min: 0,
+        max: 1,
+        step: 0.05,
+        onChange: (value) => setFillLightIntensity(value)
+      },
+      'Main Light Position': folder({
+        mainLightX: {
+          value: mainLightX,
+          min: -10,
+          max: 20,
+          step: 0.5,
+          onChange: (value) => setMainLightPosition([value, mainLightY, mainLightZ])
+        },
+        mainLightY: {
+          value: mainLightY,
+          min: -10,
+          max: 20,
+          step: 0.5,
+          onChange: (value) => setMainLightPosition([mainLightX, value, mainLightZ])
+        },
+        mainLightZ: {
+          value: mainLightZ,
+          min: -10,
+          max: 20,
+          step: 0.5,
+          onChange: (value) => setMainLightPosition([mainLightX, mainLightY, value])
+        }
+      }, { collapsed: true }),
+      'Fill Light Position': folder({
+        fillLightX: {
+          value: fillLightX,
+          min: -10,
+          max: 10,
+          step: 0.5,
+          onChange: (value) => setFillLightPosition([value, fillLightY, fillLightZ])
+        },
+        fillLightY: {
+          value: fillLightY,
+          min: -10,
+          max: 10,
+          step: 0.5,
+          onChange: (value) => setFillLightPosition([fillLightX, value, fillLightZ])
+        },
+        fillLightZ: {
+          value: fillLightZ,
+          min: -10,
+          max: 10,
+          step: 0.5,
+          onChange: (value) => setFillLightPosition([fillLightX, fillLightY, value])
+        }
+      }, { collapsed: true }),
       groundColor: {
         value: groundColor,
         onChange: (value) => setGroundColor(value)
-      }
-    }),
-    'Settings Management': folder({
-      panelPosition: {
-        value: panelPosition,
-        onChange: (value) => setPanelPosition(value),
-        joystick: 'invertY'
       },
+      groundVisible: {
+        value: groundVisible,
+        onChange: (value) => setGroundVisible(value)
+      }
+    }, { collapsed: true }),
+    
+    'Shadow Settings': folder({
+      shadowOpacity: {
+        value: shadowOpacity,
+        min: 0,
+        max: 1,
+        step: 0.05,
+        onChange: (value) => setShadowOpacity(value)
+      },
+      shadowMapSize: {
+        value: shadowMapSize,
+        options: {
+          "Low Quality (512px)": 512,
+          "Medium Quality (1024px)": 1024,
+          "High Quality (2048px)": 2048,
+          "Ultra Quality (4096px)": 4096
+        },
+        onChange: (value) => setShadowMapSize(value)
+      },
+      shadowRadius: {
+        value: shadowRadius,
+        min: 0,
+        max: 10,
+        step: 0.1,
+        onChange: (value) => setShadowRadius(value)
+      },
+      shadowBias: {
+        value: shadowBias,
+        min: -0.001,
+        max: 0,
+        step: 0.0001,
+        onChange: (value) => setShadowBias(value)
+      },
+      'Refresh Shadows': button(() => handleRefreshShadows())
+    }, { collapsed: true }),
+    
+    'Camera Controls': folder({
+      'Camera Position': folder({
+        cameraX: {
+          value: cameraX,
+          min: -20,
+          max: 20,
+          step: 0.1,
+          onChange: (value) => setCameraPosition([value, cameraY, cameraZ])
+        },
+        cameraY: {
+          value: cameraY,
+          min: -20,
+          max: 20,
+          step: 0.1,
+          onChange: (value) => setCameraPosition([cameraX, value, cameraZ])
+        },
+        cameraZ: {
+          value: cameraZ,
+          min: -20,
+          max: 20,
+          step: 0.1,
+          onChange: (value) => setCameraPosition([cameraX, cameraY, value])
+        }
+      }, { collapsed: true }),
+      cameraFov: {
+        value: cameraFov,
+        min: 10,
+        max: 120,
+        step: 1,
+        label: 'Field of View (°)',
+        onChange: (value) => setCameraFov(value)
+      },
+      cameraZoom: {
+        value: cameraZoom,
+        min: 0.1,
+        max: 5,
+        step: 0.1,
+        onChange: (value) => setCameraZoom(value)
+      },
+      orbitMinDistance: {
+        value: orbitMinDistance,
+        min: 0.1,
+        max: 5,
+        step: 0.1,
+        label: 'Min Distance',
+        onChange: (value) => setOrbitMinDistance(value)
+      },
+      orbitMaxDistance: {
+        value: orbitMaxDistance,
+        min: 1,
+        max: 20,
+        step: 0.5,
+        label: 'Max Distance',
+        onChange: (value) => setOrbitMaxDistance(value)
+      },
+      enableDamping: {
+        value: enableDamping,
+        label: 'Enable Smooth Camera',
+        onChange: (value) => setEnableDamping(value)
+      },
+      'Reset Position': button(() => handleResetCameraPosition()),
+      'Reset Controls': button(() => handleResetCameraControls())
+    }, { collapsed: true }),
+    
+    'Settings': folder({
       'Export Settings': button(() => handleExportStorage()),
       'Import Settings': button(() => handleImportClick()),
-      'Reset to Defaults': button(() => handleResetToDefaults())
-    })
+      'Reset to Defaults': button(() => handleResetToDefaults()),
+      'Fix Panel Positions': button(() => handleFixPanelPositions())
+    }, { collapsed: true })
   });
-
-  // Storage for separate panel positions
-  // Panel positions storage
-  const [wheelPanelPosition, setWheelPanelPosition] = useStorage<{x: number, y: number}>(
-    "wheelPanelPosition", 
-    { x: 20, y: 20 }
-  );
   
-  const [lightingPanelPosition, setLightingPanelPosition] = useStorage<{x: number, y: number}>(
-    "lightingPanelPosition", 
-    { x: 350, y: 20 }
-  );
-  
-  const [cameraPanelPosition, setCameraPanelPosition] = useStorage<{x: number, y: number}>(
-    "cameraPanelPosition", 
-    { x: 20, y: 300 }
-  );
-  
-  const [settingsPanelPosition, setSettingsPanelPosition] = useStorage<{x: number, y: number}>(
-    "settingsPanelPosition", 
-    { x: 350, y: 300 }
-  );
-  
-  const [shadowPanelPosition, setShadowPanelPosition] = useStorage<{x: number, y: number}>(
-    "shadowPanelPosition", 
-    { x: 680, y: 20 }
-  );
-  
-  // Camera settings storage
-  const [cameraPosition, setCameraPosition] = useStorage<[number, number, number]>(
-    "cameraPosition",
-    globalState.cameraSettings?.position || [0, 0, 5]
-  );
-  
-  const [cameraFov, setCameraFov] = useStorage<number>(
-    "cameraFov",
-    globalState.cameraSettings?.fov || 50
-  );
-  
-  const [cameraZoom, setCameraZoom] = useStorage<number>(
-    "cameraZoom",
-    globalState.cameraSettings?.zoom || 1
-  );
-  
-  // Orbit controls settings
-  const [orbitMinDistance, setOrbitMinDistance] = useStorage<number>(
-    "orbitMinDistance",
-    globalState.cameraSettings?.minDistance || 1
-  );
-  
-  const [orbitMaxDistance, setOrbitMaxDistance] = useStorage<number>(
-    "orbitMaxDistance",
-    globalState.cameraSettings?.maxDistance || 10
-  );
-  
-  const [enableDamping, setEnableDamping] = useStorage<boolean>(
-    "enableDamping",
-    globalState.cameraSettings?.enableDamping !== undefined ? globalState.cameraSettings.enableDamping : true
-  );
-  
-  // Handle fixing all panel positions
-  const handleFixPanelPositions = useCallback(() => {
-    resetPanelPositions();
-    showNotification('Panel positions have been reset', 'info');
-  }, [showNotification]);
-
   return (
     <div className="w-screen h-screen bg-black fixed top-0 left-0">
-      {/* Hide the built-in Leva panel - we'll use our custom panels instead */}
-      <div className="hidden">
-        <Leva 
-          hidden={true}
-          titleBar={false}
-          theme={{
-            colors: {
-              elevation1: '#222',
-              elevation2: '#333',
-              elevation3: '#444',
-              accent1: '#0af',
-              accent2: '#08f',
-              accent3: '#06f',
-              highlight1: '#fff',
-              highlight2: '#fff',
-              highlight3: '#fff'
-            }
-          }}
-        />
-      </div>
-      
-      {/* Custom control panels using our new DraggablePanel component */}
-      <DraggablePanel 
-        title="Wheel Model Controls"
-        componentName="SteeringWheel"
-        panelId="wheel"
-        initialPosition={wheelPanelPosition}
-        initialCollapsed={false}
-        onPositionChange={setWheelPanelPosition}
-        theme="dark"
-        initialWidth={320}
-        initialHeight="auto"
-      >
-        <div className="space-y-3">
-          <SliderControl
-            label="Rotation X"
-            value={rotationX}
-            onChange={setRotationX}
-            min={0}
-            max={360}
-            step={1}
-            displayPrecision={0}
-            unit="°"
-          />
-          
-          <SliderControl
-            label="Rotation Y"
-            value={rotationY}
-            onChange={setRotationY}
-            min={0}
-            max={360}
-            step={1}
-            displayPrecision={0}
-            unit="°"
-          />
-          
-          <SliderControl
-            label="Rotation Z"
-            value={rotationZ}
-            onChange={setRotationZ}
-            min={0}
-            max={360}
-            step={1}
-            displayPrecision={0}
-            unit="°"
-          />
-          
-          <SliderControl
-            label="Scale"
-            value={scale}
-            onChange={setScale}
-            min={0.001}
-            max={0.1}
-            step={0.001}
-            displayPrecision={3}
-          />
-        </div>
-      </DraggablePanel>
-      
-      <DraggablePanel 
-        title="Lighting Controls"
-        componentName="SteeringWheel"
-        panelId="lighting"
-        initialPosition={lightingPanelPosition}
-        initialCollapsed={false}
-        onPositionChange={setLightingPanelPosition}
-        theme="dark"
-        initialWidth={320}
-        initialHeight="auto"
-      >
-        <div className="space-y-3">
-          <SliderControl
-            label="Ambient Light"
-            value={ambientIntensity}
-            onChange={setAmbientIntensity}
-            min={0}
-            max={1}
-            step={0.05}
-            displayPrecision={2}
-          />
-          
-          <SliderControl
-            label="Main Light Intensity"
-            value={directionalIntensity}
-            onChange={setDirectionalIntensity}
-            min={0}
-            max={2}
-            step={0.05}
-            displayPrecision={2}
-          />
-          
-          <SliderControl
-            label="Fill Light Intensity"
-            value={fillLightIntensity}
-            onChange={setFillLightIntensity}
-            min={0}
-            max={1}
-            step={0.05}
-            displayPrecision={2}
-          />
-          
-          <VectorControl
-            label="Main Light Position"
-            value={mainLightPosition}
-            onChange={setMainLightPosition}
-            min={-10}
-            max={20}
-            step={0.5}
-          />
-          
-          <VectorControl
-            label="Fill Light Position"
-            value={fillLightPosition}
-            onChange={setFillLightPosition}
-            min={-10}
-            max={10}
-            step={0.5}
-          />
-          
-          <ColorControl
-            label="Ground Color"
-            value={groundColor}
-            onChange={setGroundColor}
-          />
-          
-          <ToggleControl
-            label="Show Ground Plane"
-            value={groundVisible}
-            onChange={setGroundVisible}
-            id="groundVisible"
-          />
-        </div>
-      </DraggablePanel>
-      
-      {/* New Shadow Settings Panel */}
-      <DraggablePanel 
-        title="Shadow Settings"
-        componentName="SteeringWheel"
-        panelId="shadow"
-        initialPosition={shadowPanelPosition}
-        initialCollapsed={false}
-        onPositionChange={setShadowPanelPosition}
-        theme="dark"
-        initialWidth={320}
-        initialHeight="auto"
-      >
-        <div className="space-y-3">
-          <SliderControl
-            label="Shadow Opacity"
-            value={shadowOpacity}
-            onChange={setShadowOpacity}
-            min={0}
-            max={1}
-            step={0.05}
-            displayPrecision={2}
-          />
-          
-          <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-300 mb-1">Shadow Map Size</label>
-            <select 
-              value={shadowMapSize}
-              onChange={(e) => setShadowMapSize(Number(e.target.value))}
-              className="w-full p-1 bg-gray-700 text-white border-gray-600 rounded-md"
-            >
-              <option value={512}>512px (Low Quality)</option>
-              <option value={1024}>1024px (Medium Quality)</option>
-              <option value={2048}>2048px (High Quality)</option>
-              <option value={4096}>4096px (Ultra Quality)</option>
-            </select>
-          </div>
-          
-          <SliderControl
-            label="Shadow Radius (Softness)"
-            value={shadowRadius}
-            onChange={setShadowRadius}
-            min={0}
-            max={10}
-            step={0.1}
-            displayPrecision={1}
-          />
-          
-          <SliderControl
-            label="Shadow Bias"
-            value={shadowBias}
-            onChange={setShadowBias}
-            min={-0.001}
-            max={0}
-            step={0.0001}
-            displayPrecision={5}
-          />
-          
-          <div className="text-xs text-gray-400 mt-2 italic">
-            Note: Higher quality shadows require more performance.
-          </div>
-          
-          <button 
-            onClick={() => {
-              // Force refresh of renderer to apply shadow settings
-              // This is just a state update to trigger a re-render
-              setShadowMapSize(prev => prev);
-              showNotification('Shadow settings refreshed', 'info');
-            }}
-            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md mt-2"
-          >
-            Refresh Shadows
-          </button>
-        </div>
-      </DraggablePanel>
-      
-      <DraggablePanel 
-        title="Camera Controls"
-        componentName="SteeringWheel"
-        panelId="camera"
-        initialPosition={cameraPanelPosition}
-        initialCollapsed={false}
-        onPositionChange={setCameraPanelPosition}
-        theme="dark"
-        initialWidth={320}
-        initialHeight="auto"
-      >
-        <div className="space-y-3">
-          <VectorControl
-            label="Camera Position"
-            value={cameraPosition}
-            onChange={setCameraPosition}
-            min={-20}
-            max={20}
-            step={0.1}
-          />
-          
-          <SliderControl
-            label="Field of View (FOV)"
-            value={cameraFov}
-            onChange={setCameraFov}
-            min={10}
-            max={120}
-            step={1}
-            displayPrecision={0}
-            unit="°"
-          />
-          
-          <SliderControl
-            label="Camera Zoom"
-            value={cameraZoom}
-            onChange={setCameraZoom}
-            min={0.1}
-            max={5}
-            step={0.1}
-            displayPrecision={1}
-            unit="x"
-          />
-          
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Min Distance</label>
-              <input 
-                type="number" 
-                value={orbitMinDistance}
-                onChange={(e) => setOrbitMinDistance(Number(e.target.value))}
-                className="w-full p-1 bg-gray-700 text-white border-gray-600 rounded-md"
-                step="0.5"
-                min="0.1"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Max Distance</label>
-              <input 
-                type="number" 
-                value={orbitMaxDistance}
-                onChange={(e) => setOrbitMaxDistance(Number(e.target.value))}
-                className="w-full p-1 bg-gray-700 text-white border-gray-600 rounded-md"
-                step="1"
-                min="1"
-              />
-            </div>
-          </div>
-          
-          <ToggleControl
-            label="Enable Damping (Smooth Camera)"
-            value={enableDamping}
-            onChange={setEnableDamping}
-            id="enableDamping"
-          />
-          
-          <div className="grid grid-cols-2 gap-2">
-            <button 
-              onClick={() => {
-                // Reset camera to default position
-                setCameraPosition([0, 0, 5]);
-                setCameraFov(50);
-                setCameraZoom(1);
-                showNotification('Camera position reset', 'info');
-              }}
-              className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md mt-2"
-            >
-              Reset Position
-            </button>
-            
-            <button 
-              onClick={() => {
-                setOrbitMinDistance(1);
-                setOrbitMaxDistance(10);
-                setEnableDamping(true);
-                showNotification('Camera controls reset', 'info');
-              }}
-              className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md mt-2"
-            >
-              Reset Controls
-            </button>
-          </div>
-        </div>
-      </DraggablePanel>
-      
-      <DraggablePanel 
-        title="Settings"
-        componentName="SteeringWheel"
-        panelId="settings"
-        initialPosition={settingsPanelPosition}
-        initialCollapsed={false}
-        onPositionChange={setSettingsPanelPosition}
-        theme="dark"
-        initialWidth={320}
-        initialHeight="auto"
-      >
-        <div className="space-y-3">
-          <button 
-            onClick={handleExportStorage}
-            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md"
-          >
-            Export Settings
-          </button>
-          
-          <button 
-            onClick={handleImportClick}
-            className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md"
-          >
-            Import Settings
-          </button>
-          
-          <button 
-            onClick={handleResetToDefaults}
-            className="w-full py-2 px-4 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-md"
-          >
-            Reset to Defaults
-          </button>
-          
-          <button 
-            onClick={handleFixPanelPositions}
-            className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md"
-          >
-            Fix Panel Positions
-          </button>
-        </div>
-      </DraggablePanel>
+      {/* Leva panel configuration - not hidden this time */}
+      <Leva 
+        fill
+        titleBar={true}
+        flat={false}
+        collapsed={false}
+        oneLineLabels={false}
+        theme={{
+          colors: {
+            elevation1: '#222',
+            elevation2: '#333',
+            elevation3: '#444',
+            accent1: '#0af',
+            accent2: '#08f',
+            accent3: '#06f',
+            highlight1: '#fff',
+            highlight2: '#fff',
+            highlight3: '#fff'
+          }
+        }}
+      />
       
       {/* Three.js scene with global state integration */}
       <Canvas 
@@ -957,9 +747,6 @@ export default React.memo(function SteeringWheel() {
             scale={scale}
             castShadow={true}
             receiveShadow={true}
-            onLoad={() => {
-              // Model loaded successfully (no logging to avoid large objects)
-            }}
           />
         </group>
         
@@ -1041,8 +828,4 @@ export default React.memo(function SteeringWheel() {
       )}
     </div>
   );
-}, () => {
-  // Always return true to prevent re-renders from parent
-  // All our state is managed internally and via hooks
-  return true;
 });

@@ -31,12 +31,8 @@ export default function RacingScene({
   defaultBackgroundColor = 'transparent'
 }: IRacingSceneProps) {
   
-  // Debug log to verify the component is rendering
-  console.log("Rendering RacingScene component with:", { 
-    showControls, 
-    showGizmo, 
-    childrenCount: React.Children.count(children) 
-  });
+  // Component is rendering with:
+  // showControls, showGizmo, and children count
   // Unused variables are intentional for API compatibility
   // We've moved to the centralized control panel system
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

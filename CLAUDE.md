@@ -3,8 +3,14 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. Claude MUST follow the rules and guidelines in this file when making changes to the codebase.
 
 ## Build Commands
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
+- `npm run dev` - Start development server (custom multi-panel version)
+- `npm run dev:unified` - Start server with unified custom panel interface
+- `npm run dev:combined` - Start server with combined custom panel interface
+- `npm run dev:leva` - Start server with Leva's native panel interface
+- `npm run build` - Build for production (custom multi-panel version)
+- `npm run build:unified` - Build for production with unified custom panel interface
+- `npm run build:combined` - Build for production with combined custom panel interface
+- `npm run build:leva` - Build for production with Leva's native panel interface
 - `npm run lint` - Run ESLint
 - `npm run preview` - Preview production build
 
@@ -81,13 +87,25 @@ Before committing, always run `npm run lint` to ensure code quality.
   - Properly handle unused parameters in components with eslint-disable comments
 
 - **Control Panel System**:
-  - Custom ResizablePanel component that wraps Leva UI panels
-  - Panels are independently draggable and resizable
+  - Four panel design approaches available:
+    1. **Multi-panel version**: Multiple independent custom floating panels
+    2. **Unified panel version**: Multiple custom panels with ability to switch between them
+    3. **Combined panel version**: Single custom panel with collapsible sections for all controls
+    4. **Leva panel version**: Uses Leva's native UI with all controls in a unified panel with collapsible sections
+  - Custom DraggablePanel component with collapsible UI
+  - CollapsibleSection component for organizing controls into groups
+  - Standardized UI controls:
+    - SliderControl: Numeric sliders with min/max/step/precision
+    - ColorControl: Color pickers with preview
+    - ToggleControl: Boolean switches
+    - VectorControl: 3D position ([x,y,z]) inputs
+  - Panels are independently draggable, resizable, and collapsible
   - Resize handles appear outside panel borders for accessibility
   - Hover effects provide visual feedback for interactive elements
   - Fixed position setup for reliable positioning across different viewports
   - Bounds detection prevents panels from moving off-screen
-  - Panel state persists in session storage between refreshes
+  - Panel state (position, size, collapse) persists in session storage
+  - Consistent UI with standardized numeric ranges and step values for all controls
 
 - **Config System**:
   - Uses controlStateManager.ts to persist UI panel positions and control values
@@ -104,29 +122,33 @@ Before committing, always run `npm run lint` to ensure code quality.
 
 ## Last Session Accomplishments
 
-- Enhanced control panel interaction and movement:
-  - Implemented completely redesigned ResizablePanel component with improved drag & resize functionality
-  - Fixed issues with panel movement that previously caused panels to snap or be constrained
-  - Improved panel positioning with fixed positioning to prevent containment issues
-  - Added larger, more accessible resize handles with hover effects for better usability
-  - Created smarter bounds detection to prevent panels from moving off-screen
-  - Added dedicated "Fix Positions" button for easy panel recovery
-  - Updated controlState.json and fallbackState with better default panel positions
-  - Made panels independently movable throughout the entire window
+- Implemented dual panel system approach:
+  - Created a unified panel version with collapsible sections
+  - Maintained original multi-panel version for comparison and preference
+  - Added ability to switch between panel styles in the UI
+  - Created CollapsibleSection component for organizing controls
+  - Built UnifiedControlPanel component that combines sections in one panel
+  - Made sections independently collapsible within the unified panel
 
-- Control panel UI improvements:
-  - Separated controls into four distinct panels: Steering, Wheel Model, Shadow Surface, and Lighting
-  - Adjusted wheel orientation to face upward by default (rotationX: 90 degrees)
-  - Added rotationY and rotationZ controls for more flexible wheel positioning
-  - Fixed proper panel state persistence between page refreshes
-  - Ensured all control values are saved to session storage
-  - Added subtle visual feedback for resize operations
-  - Improved accessibility with larger touch targets
+- Enhanced control panel interaction and UI controls:
+  - Implemented collapsible panels with persistent collapse state
+  - Created standardized UI control components:
+    - SliderControl: For all numeric range inputs with consistent styling and visual feedback
+    - ColorControl: For color pickers with preview
+    - ToggleControl: For boolean switches
+    - VectorControl: For 3D position ([x,y,z]) inputs
+  - Updated all panels to use the new control components
+  - Added min, max, and step values for all sliders based on appropriate ranges
+  - Persisted all panel states (position, collapse state) between page refreshes
+  - Improved control organization and visual consistency across all panels
+  - Added proper display precision and units for input values
 
-- Added 3D enhancements and technical fixes:
-  - Implemented nested rotation components for X, Y, and Z axes
-  - Improved model orientation with better default values
-  - Made controls more responsive with immediate feedback
-  - Adjusted TypeScript config to reduce over-strict parameter checking
-  - Resolved all lint and TypeScript errors in the codebase
-  - Added proper eslint-disable comments where needed
+- Technical enhancements:
+  - Added new build commands for both panel versions
+  - Updated Vite configuration to support multiple entry points
+  - Created alternative UnifiedApp component
+  - Improved component organization with proper exports from common/
+  - Enhanced state management for panel positions and collapse states
+  - Removed unnecessary console logs for cleaner code
+  - Added appropriate TypeScript interfaces for all new components
+  - Implemented react memo pattern for better performance

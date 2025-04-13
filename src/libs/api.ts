@@ -25,7 +25,7 @@ export default class Client {
   private createSocket(): void {
     const socket = new WebSocket(this.server)
     socket.onopen = () => {
-      console.log("Socket Created")
+      // Socket connection established
       socket.send("echo|")
     }
     socket.onmessage = (event: MessageEvent) => {

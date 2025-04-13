@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, ReactNode } from 'react';
-import { savePanelPosition, loadPanelPosition, loadPanelState, ensurePanelOnScreen } from '../../utils/controlStateManager';
+import { savePanelPosition, loadPanelState, ensurePanelOnScreen } from '../../utils/controlStateManager';
 
 interface ResizeHandleProps {
   position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -197,11 +197,6 @@ export default React.memo(function DraggablePanel({
       // Apply directly to DOM for smooth movement
       panel.style.left = `${newX}px`;
       panel.style.top = `${newY}px`;
-      
-      // Check if console logs are needed for debugging
-      if (Math.abs(dy) > 5) {
-        console.log('Vertical movement:', dy, 'New Y:', newY);
-      }
     };
     
     const handleMouseUp = (e: MouseEvent) => {
@@ -370,7 +365,8 @@ export default React.memo(function DraggablePanel({
     panelId, 
     onPositionChange, 
     size.width, 
-    size.height
+    size.height,
+    collapsed // Add collapsed state to dependencies
   ]);
   
   // Handle resize operations
