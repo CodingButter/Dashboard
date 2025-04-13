@@ -1,0 +1,67 @@
+{
+  "global": {
+    "showControls": true
+  },
+  "components": {
+    "SteeringWheel": {
+      "panels": {
+        "wheel": {
+          "position": { "x": 20, "y": 20 },
+          "collapsed": false,
+          "hidden": false,
+          "width": 320,
+          "height": "auto"
+        },
+        "lighting": {
+          "position": { "x": 350, "y": 20 },
+          "collapsed": false,
+          "hidden": false,
+          "width": 320,
+          "height": "auto"
+        },
+        "camera": {
+          "position": { "x": 20, "y": 310 },
+          "collapsed": false,
+          "hidden": false,
+          "width": 320,
+          "height": "auto"
+        },
+        "settings": {
+          "position": { "x": 350, "y": 250 },
+          "collapsed": false,
+          "hidden": false,
+          "width": 320,
+          "height": "auto"
+        }
+      },
+      "values": {
+        "steeringControl": 0,
+        "rotationX": 90,
+        "rotationY": 0,
+        "rotationZ": 0,
+        "scale": 0.01,
+        "ambientIntensity": 0.3,
+        "directionalIntensity": 0.7,
+        "groundColor": "#444444",
+        "groundHeight": -2,
+        "groundSize": 30,
+        "groundVisible": true,
+        "shadowOpacity": 0.6,
+        "ambience": 0.2,
+        "brightness": 2.5,
+        "fillLightIntensity": 0.8,
+        "mainLightX": 5,
+        "mainLightY": 8,
+        "mainLightZ": 5
+      },
+      "cameraSettings": {
+        "position": [0, 0, 5],
+        "fov": 50,
+        "zoom": 1,
+        "minDistance": 1,
+        "maxDistance": 10,
+        "enableDamping": true
+      }
+    }
+  }
+}

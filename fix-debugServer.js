@@ -1,13 +1,7 @@
-// Fix imports for Node.js
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-
-// Make sure the server can be killed properly
-const cleanupAndExit = () => {
-  console.log('Shutting down debug server...');
-  process.exit(0);
-};
+// Simple HTTP server for debugging that doesn't use ES modules
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
 
 const app = express();
 const PORT = 3030;
@@ -58,22 +52,22 @@ app.post('/log', (req, res) => {
 const server = app.listen(PORT, () => {
   console.log(`Debug server running on http://localhost:${PORT}`);
   console.log(`View logs at http://localhost:${PORT}/logs`);
-  
-  // Add an initial log for testing
-  logs.push({
-    level: 'info',
-    message: 'Debug server started and ready to collect logs',
-    timestamp: new Date().toISOString()
+});
+
+// Handle server shutdown properly
+process.on('SIGINT', () => {
+  console.log('Shutting down debug server...');
+  server.close(() => {
+    console.log('Debug server closed');
+    process.exit(0);
   });
 });
 
-// Handle various exit signals
-process.on('SIGINT', cleanupAndExit);
-process.on('SIGTERM', cleanupAndExit);
-process.on('SIGHUP', cleanupAndExit);
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err);
-  cleanupAndExit();
+// If parent process exits
+process.on('SIGTERM', () => {
+  console.log('Shutting down debug server...');
+  server.close(() => {
+    console.log('Debug server closed');
+    process.exit(0);
+  });
 });

@@ -4,12 +4,18 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node debugServer.js & vite",
+    "dev": "vite",
+    "dev:clean": "bash -c \"pkill -f 'vite' || true && vite\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "debug-server": "node debugServer.js",
-    "check-logs": "node checkLogs.js"
+    "logs:start": "node simple-debug.js",
+    "logs:stop": "bash -c \"pkill -f 'node simple-debug.js' || true\"",
+    "logs:view": "node fetch-logs.js",
+    "logs:clear": "curl -X POST http://localhost:3030/clear-logs || echo 'Debug server not running'",
+    "logs:files": "curl http://localhost:3030/log-files || echo 'Debug server not running'",
+    "kill-vite": "bash -c \"pkill -f 'vite' || true\"",
+    "stop-all": "npm run logs:stop && npm run kill-vite"
   },
   "dependencies": {
     "@react-three/drei": "^10.0.6",

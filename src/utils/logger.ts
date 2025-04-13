@@ -3,8 +3,10 @@
 // Check if we're in development mode
 const isDevelopment = import.meta.env.DEV === true;
 
-const DEBUG_SERVER_URL = 'http://localhost:3030/log';
-const DEBUG_SERVER_CLEAR_URL = 'http://localhost:3030/clear-logs';
+// Using proxy paths to avoid CORS issues
+const DEBUG_SERVER_HEALTH_URL = '/api/logs/logs'; // Use '/logs' endpoint to check health
+const DEBUG_SERVER_LOG_URL = '/api/logs/log';      // Endpoint to send logs to
+const DEBUG_SERVER_CLEAR_URL = '/api/logs/clear-logs';
 
 // Connection state
 let serverConnected = false;
@@ -24,8 +26,8 @@ const checkServerConnection = async () => {
   if (!isDevelopment) return;
   
   try {
-    const response = await fetch(DEBUG_SERVER_URL, {
-      method: 'HEAD',
+    const response = await fetch(DEBUG_SERVER_HEALTH_URL, {
+      method: 'GET',
       cache: 'no-store'
     });
     
@@ -52,7 +54,7 @@ const checkServerConnection = async () => {
       
       for (const log of logsToSend) {
         try {
-          await fetch(DEBUG_SERVER_URL, {
+          await fetch(DEBUG_SERVER_LOG_URL, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -86,6 +88,22 @@ const checkServerConnection = async () => {
 const sendToServer = async (level: string, args: any[]) => {
   if (!isDevelopment) return;
   
+  // Skip some verbose logs that can affect performance
+  // Check first arg for patterns we want to skip
+  if (args.length > 0) {
+    const firstArg = String(args[0] || '');
+    
+    // Skip very frequent logs that can cause performance issues
+    if (
+      firstArg.includes('ModelLoader:') || 
+      firstArg.includes('Control values') ||
+      firstArg.includes('values changed:')
+    ) {
+      // Still log to browser console but don't send to server
+      return;
+    }
+  }
+  
   // Convert args to a string representation
   let message = '';
   let stack = '';
@@ -96,7 +114,8 @@ const sendToServer = async (level: string, args: any[]) => {
       stack = arg.stack || '';
     } else if (typeof arg === 'object') {
       try {
-        message += JSON.stringify(arg) + ' ';
+        // Use more efficient serialization - limit depth
+        message += JSON.stringify(arg, null, 0) + ' ';
       } catch {
         message += '[Object] ';
       }
@@ -114,14 +133,17 @@ const sendToServer = async (level: string, args: any[]) => {
 
   // If server is not connected, add to pending logs and check connection
   if (!serverConnected) {
-    pendingLogs.push(logData);
+    // Limit pending logs size
+    if (pendingLogs.length < 100) {
+      pendingLogs.push(logData);
+    }
     checkServerConnection();
     return;
   }
   
   try {
     // Send to debug server
-    await fetch(DEBUG_SERVER_URL, {
+    await fetch(DEBUG_SERVER_LOG_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -130,7 +152,9 @@ const sendToServer = async (level: string, args: any[]) => {
     });
   } catch {
     // If sending fails, add to pending logs and mark server as disconnected
-    pendingLogs.push(logData);
+    if (pendingLogs.length < 100) {
+      pendingLogs.push(logData);
+    }
     serverConnected = false;
     checkServerConnection();
   }

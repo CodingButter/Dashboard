@@ -1,0 +1,32 @@
+{
+  "appSettings": {
+    "theme": "dark",
+    "showControlsOnLoad": true,
+    "defaultView": "wheel"
+  },
+  "wheelSettings": {
+    "rotationX": 90,
+    "rotationY": 0,
+    "rotationZ": 0,
+    "scale": 0.01,
+    "panelPosition": { "x": 20, "y": 20 }
+  },
+  "throttleSettings": {
+    "sensitivity": 0.5,
+    "panelPosition": { "x": 20, "y": 300 }
+  },
+  "brakeSettings": {
+    "sensitivity": 0.8,
+    "panelPosition": { "x": 20, "y": 450 }
+  },
+  "lightingSettings": {
+    "ambientIntensity": 0.3,
+    "directionalIntensity": 0.7,
+    "lightPosition": [5, 10, 5]
+  },
+  "cameraSettings": {
+    "fov": 50,
+    "position": [0, 0, 5],
+    "target": [0, 0, 0]
+  }
+}

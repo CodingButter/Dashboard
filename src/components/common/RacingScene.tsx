@@ -1,9 +1,8 @@
-import { ReactNode, useRef, useEffect } from 'react'
+import React, { ReactNode, useRef, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, GizmoHelper, GizmoViewcube, SoftShadows } from '@react-three/drei'
 import * as THREE from 'three'
-import { useControls, folder } from 'leva'
-import { DirectionalLight, SpotLight } from 'three'
+import { DirectionalLight } from 'three'
 
 interface IRacingSceneProps {
   children: ReactNode;
@@ -21,76 +20,50 @@ export default function RacingScene({
   children,
   showControls = true,
   showGizmo = false,
-  controlsGroup = 'scene',
-  defaultShadowDistance = 3,
-  defaultShadowOpacity = 0.8,
-  defaultShadowSize = 12,
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  // These parameters are kept for backward compatibility but not used
+  controlsGroup,
+  defaultShadowDistance,
+  defaultShadowOpacity,
+  defaultShadowSize,
+  /* eslint-enable @typescript-eslint/no-unused-vars */
   defaultLightPosition = [0, 2, 8],
   defaultBackgroundColor = 'transparent'
 }: IRacingSceneProps) {
+  
+  // Debug log to verify the component is rendering
+  console.log("Rendering RacingScene component with:", { 
+    showControls, 
+    showGizmo, 
+    childrenCount: React.Children.count(children) 
+  });
+  // Unused variables are intentional for API compatibility
+  // We've moved to the centralized control panel system
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const shadowPlaneRef = useRef<THREE.Mesh>(null!)
   const lightRef = useRef<DirectionalLight>(null!)
   
-  // Create properly structured controls
-  const { 
-    // shadowDistance is used in the original code but we're using fixed positioning now
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    shadowOpacity, 
-    shadowSize, 
-    shadowBlur, 
-    shadowColor,
-    lightX,
-    lightY,
-    lightZ,
-    showLightHelper 
-  } = useControls(controlsGroup, {
-    'Shadow Settings': folder({
-      shadowDistance: { value: defaultShadowDistance, min: 0, max: 10, step: 0.1 },
-      shadowOpacity: { value: defaultShadowOpacity, min: 0, max: 1, step: 0.05 },
-      shadowSize: { value: defaultShadowSize, min: 5, max: 20, step: 0.5 },
-      shadowBlur: { value: 0.2, min: 0, max: 2, step: 0.05 },
-      shadowColor: { value: '#000000' }
-    }),
-    'Light Settings': folder({
-      lightX: { value: defaultLightPosition[0], min: -20, max: 20, step: 0.5 },
-      lightY: { value: defaultLightPosition[1], min: 0, max: 20, step: 0.5 },
-      lightZ: { value: defaultLightPosition[2], min: -20, max: 20, step: 0.5 }
-    }),
-    showLightHelper: { value: true }
-  })
+  // This component no longer uses its own controls - we're using the combined panel instead
+  // Define default values for the properties
+  const lightX = defaultLightPosition[0];
+  const lightY = defaultLightPosition[1];
+  const lightZ = defaultLightPosition[2];
+  const showLightHelper = true;
   
   // Handle light helper via useEffect to avoid conditional rendering issues
+  // Only create helper in development mode to improve performance
   useEffect(() => {
+    if (!import.meta.env.DEV) return undefined; // Skip in production
     if (showLightHelper && lightRef.current) {
       // Safe access to parent
       const parent = lightRef.current.parent
       if (!parent) return undefined
       
       const currentLight = lightRef.current
-      const helper = new THREE.SpotLightHelper(currentLight, 'red')
+      const helper = new THREE.DirectionalLightHelper(currentLight, 2, 'red')
       parent.add(helper)
-
-      // Debug shadow settings
-      console.log('RacingScene Shadow Debug:');
-      console.log('- Light position:', [lightX, lightY, lightZ]);
-      console.log('- Shadow settings:', {
-        castShadow: currentLight.castShadow,
-        mapSize: currentLight.shadow?.mapSize,
-        bias: currentLight.shadow?.bias,
-        camera: {
-          near: currentLight.shadow?.camera.near,
-          far: currentLight.shadow?.camera.far,
-          top: currentLight.shadow?.camera.top,
-          right: currentLight.shadow?.camera.right,
-          bottom: currentLight.shadow?.camera.bottom,
-          left: currentLight.shadow?.camera.left
-        }
-      });
-      console.log('- Shadow plane:', {
-        position: shadowPlaneRef.current?.position,
-        rotation: shadowPlaneRef.current?.rotation,
-        receiveShadow: shadowPlaneRef.current?.receiveShadow
-      });
+      
+      // Removed logging to reduce console output
       
       return () => {
         helper.dispose()
@@ -102,21 +75,48 @@ export default function RacingScene({
     return undefined
   }, [showLightHelper, lightX, lightY, lightZ])
   
+  // Use a useEffect to set up canvas resizing
+  useEffect(() => {
+    // Function to update canvas size
+    const updateCanvasSize = () => {
+      // Force three.js to update its internal canvas size
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('resize'));
+      }
+    };
+    
+    // Call immediately and add resize listener
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, []);
+  
   return (
-    <div className="flex justify-center items-center w-full h-full">
+    <div 
+      className="flex justify-center items-center w-screen h-screen fixed top-0 left-0 pointer-events-auto z-[1]"
+    >
       <Canvas 
-        className="w-full h-full" 
+        className="w-full h-full pointer-events-auto"
         shadows={{ 
-          type: THREE.PCFSoftShadowMap,
+          type: THREE.BasicShadowMap, // Use basic shadow map for better performance
           enabled: true
         }}
         gl={{ 
           antialias: true,
-          alpha: true  // Enable transparency in the renderer
+          alpha: true,  // Enable transparency in the renderer
+          powerPreference: 'high-performance', // Request high performance mode
+          failIfMajorPerformanceCaveat: false, // Don't fail if performance is poor
+          precision: 'highp', // Use high precision if available, but allow fallback
+          depth: true,
+          stencil: false // Disable stencil buffer if not needed for better performance
         }}
+        // Remove default camera to let components specify their own
+        resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }}
       >
-        {/* Enable high-quality soft shadows */}
-        <SoftShadows size={25} samples={16} focus={0.5} />
+        {/* Use lower quality soft shadows for better performance */}
+        <SoftShadows size={40} samples={4} focus={0.5} /> {/* Further reduced shadow quality */}
         
         {/* Set background color (use null for transparent) */}
         {defaultBackgroundColor !== 'transparent' ? (
@@ -124,7 +124,17 @@ export default function RacingScene({
         ) : null}
         
         <group>
-          {showControls && <OrbitControls />}
+          {showControls && (
+            <OrbitControls 
+              makeDefault 
+              enableDamping={false}
+              enableZoom={true}
+              enablePan={true}
+              enableRotate={true}
+              minDistance={1}
+              maxDistance={50}
+            />
+          )}
           
           {/* The children components will be nested here */}
           {children}
@@ -135,7 +145,7 @@ export default function RacingScene({
         </group>
         
         {showGizmo && (
-          <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
+          <GizmoHelper alignment="bottom-right" margin={[80, 80]} renderPriority={2}>
             <GizmoViewcube />
           </GizmoHelper>
         )}
